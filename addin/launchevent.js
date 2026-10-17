@@ -94,6 +94,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     website: "thegdevelopments.com",
     header: "X-GDev-Signature",
     cacheKey: "gdevProfile",
+    // Plain-text messages are switched to HTML (full signature) for these mailboxes only
+    htmlSwitchUsers: ["ahmed.elserafy@thegdevelopments.com"],
     cacheHours: 12,   // refresh directory details at most twice a day
     graphTimeoutMs: 4000
   };
@@ -219,6 +221,44 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       });
   }
 
+  // ---------- plain text -> HTML ----------
+
+  // Pilot: only these mailboxes get the automatic switch. Empty list = everyone.
+  function htmlSwitchEnabled() {
+    var me = String(Office.context.mailbox.userProfile.emailAddress || "").toLowerCase();
+    return CONFIG.htmlSwitchUsers.length === 0 || CONFIG.htmlSwitchUsers.indexOf(me) !== -1;
+  }
+
+  // Rewrites a plain-text message as HTML: blank line for typing, the HTML signature,
+  // then the existing text (e.g. the quoted email) with its line breaks kept.
+  // Resolves true if the message is now HTML. If Outlook refuses or keeps it as text,
+  // the original text is put back and it resolves false (caller then uses the text signature).
+  function convertToHtml(item, signatureHtml) {
+    var original = null;
+    return office(function (cb) { item.body.getAsync(Office.CoercionType.Text, cb); })
+      .then(function (bodyText) {
+        original = bodyText || "";
+        var quoted = enc(original).replace(/\r\n|\r|\n/g, "<br>");
+        var body =
+          '<div style="font-family:Arial, sans-serif; font-size:11pt;"><br></div>' +
+          signatureHtml +
+          '<div style="font-family:Arial, sans-serif; font-size:11pt;"><br></div>' +
+          '<div style="font-family:Arial, sans-serif; font-size:10pt;">' + quoted + "</div>";
+        return office(function (cb) { item.body.setAsync(body, { coercionType: Office.CoercionType.Html }, cb); });
+      })
+      .then(function () { return office(function (cb) { item.body.getTypeAsync(cb); }); })
+      .then(function (type) {
+        if (type === Office.CoercionType.Html) return true;
+        // Still plain text: the HTML may have been inserted as literal tags, so restore it
+        return office(function (cb) { item.body.setAsync(original, { coercionType: Office.CoercionType.Text }, cb); })
+          .then(function () { return false; }, function () { return false; });
+      })
+      .catch(function (error) {
+        console.log("G Signature: could not switch to HTML: " + (error && error.message));
+        return false;
+      });
+  }
+
   // ---------- insertion ----------
 
   function applySignature() {
@@ -253,7 +293,13 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       }
 
       steps = steps.then(function () {
-        if (isText) return setText();
+        if (isText) {
+          if (!htmlSwitchEnabled()) return setText();
+          return convertToHtml(item, html).then(function (converted) {
+            // Converted: the signature is already part of the new HTML body
+            return converted ? undefined : setText();
+          });
+        }
         // If the body type couldn't be read and HTML is refused, fall back to plain text
         return office(function (cb) {
           item.body.setSignatureAsync(html, { coercionType: Office.CoercionType.Html }, cb);
