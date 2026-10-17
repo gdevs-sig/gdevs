@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- G Developments Signature add-in. build.ps1 replaces https://gdevs-sig.github.io/gdevs/addin, gdevs-sig.github.io and 1.0.0.0. -->
+<!-- G Developments Signature add-in. build.ps1 replaces https://gdevs-sig.github.io/gdevs/addin, gdevs-sig.github.io and 1.0.0.1. -->
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
            xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
            xsi:type="MailApp">
   <Id>6dc77204-96e2-41d7-947a-9c4c2e695f1d</Id>
-  <Version>1.0.0.0</Version>
+  <Version>1.0.0.1</Version>
   <ProviderName>G Developments IT</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="G Developments Signature"/>
