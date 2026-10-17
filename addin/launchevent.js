@@ -131,6 +131,15 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       "</td></tr></table>";
   }
 
+  // Plain-text version, used when the message is in plain-text format
+  // (e.g. replying to a plain-text email), where HTML can't be inserted.
+  function buildTextSignature(p) {
+    var lines = [p.displayName, p.jobTitle, p.department, ""];
+    if (p.mobilePhone) lines.push("M: " + p.mobilePhone);
+    lines.push(CONFIG.address, CONFIG.website);
+    return lines.filter(function (l, i) { return l || i === 3; }).join("\n");
+  }
+
   // ---------- helpers ----------
 
   // Wrap an Office callback-style API in a Promise
@@ -217,7 +226,18 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
 
     return getProfile().then(function (profile) {
       var html = buildSignature(profile);
+      var text = buildTextSignature(profile);
+      var isText = false;
       var steps = Promise.resolve();
+
+      // Plain-text messages (e.g. replies to plain-text emails) reject HTML signatures
+      if (item.body.getTypeAsync) {
+        steps = steps.then(function () {
+          return office(function (cb) { item.body.getTypeAsync(cb); })
+            .then(function (type) { isText = (type === Office.CoercionType.Text); })
+            .catch(function () {});
+        });
+      }
 
       // Stop the user's own Outlook signature being added as well (Mailbox 1.10)
       if (item.disableClientSignatureAsync) {
@@ -226,10 +246,18 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
         });
       }
 
+      function setText() {
+        return office(function (cb) {
+          item.body.setSignatureAsync(text, { coercionType: Office.CoercionType.Text }, cb);
+        });
+      }
+
       steps = steps.then(function () {
+        if (isText) return setText();
+        // If the body type couldn't be read and HTML is refused, fall back to plain text
         return office(function (cb) {
           item.body.setSignatureAsync(html, { coercionType: Office.CoercionType.Html }, cb);
-        });
+        }).catch(setText);
       });
 
       // Tell the Exchange transport rule this message already has the signature (Mailbox 1.8)
