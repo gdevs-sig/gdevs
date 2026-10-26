@@ -108,37 +108,44 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
-  function contactRow(icon, alt, html) {
+  // One row of the details table: a 14px icon cell (or empty) and a text cell, both
+  // vertically centred on a fixed 14px line so icon and text sit exactly level.
+  function iconRow(icon, alt, html, textStyle, padding) {
+    var iconCell = icon
+      ? '<img src="' + CONFIG.iconBase + icon + '.png" width="14" height="14" alt="' + alt + '" style="display:block; border:0; width:14px; height:14px;">'
+      : "";
     return "<tr>" +
-      '<td style="padding:2px 7px 2px 0; vertical-align:middle; width:16px;">' +
-      '<img src="' + CONFIG.iconBase + icon + '.png" width="16" height="16" alt="' + alt + '" style="display:block; border:0;">' +
-      "</td>" +
-      '<td style="padding:2px 0; vertical-align:middle;">' + html + "</td></tr>";
+      '<td style="width:14px; padding:' + padding + ' 8px ' + padding + ' 0; vertical-align:middle; line-height:14px;">' + iconCell + "</td>" +
+      '<td style="padding:' + padding + ' 0; vertical-align:middle; line-height:14px; ' + textStyle + '">' + html + "</td></tr>";
   }
 
   function buildSignature(p) {
     var lines = [];
     // Type scale: name 11pt bold black, title/department 10pt dark grey, contacts 9pt light grey
-    lines.push('<div style="font-size:11pt; font-weight:bold; color:#000000;">' + enc(p.displayName) + "</div>");
+    lines.push('<div style="font-size:11pt; line-height:15px; font-weight:bold; color:#000000; padding-bottom:3px;">' + enc(p.displayName) + "</div>");
 
-    var role = [p.jobTitle, p.department].filter(Boolean).map(enc);
-    if (role.length) lines.push('<div style="font-size:10pt; color:#444444; padding-top:1px;">' + role.join("<br>") + "</div>");
-
-    lines.push('<div style="font-size:7pt; line-height:7pt;">&nbsp;</div>');
-
-    // Contact rows: round black icon + text. A nested table keeps icons aligned in every mail app.
+    var titleStyle = "font-size:10pt; color:#444444;";
+    var contactStyle = "font-size:9pt; color:#8c8c8c;";
     var link = 'style="color:#8c8c8c; text-decoration:none;"';
     var rows = [];
+
+    // Job title with a black briefcase; department underneath, lined up with the title text
+    if (p.jobTitle) rows.push(iconRow("line-title", "Job title", enc(p.jobTitle), titleStyle, "1px"));
+    if (p.department) rows.push(iconRow(p.jobTitle ? "" : "line-title", "Department", enc(p.department), titleStyle, "1px"));
+    if (rows.length) rows.push('<tr><td colspan="2" style="height:6px; line-height:6px; font-size:1px;">&nbsp;</td></tr>');
+
+    // Contact rows: thin light grey line icons
     if (p.mobilePhone) {
       var tel = String(p.mobilePhone).replace(/[^\d+]/g, "");
-      rows.push(contactRow("phone", "Phone", '<a href="tel:' + tel + '" ' + link + ">" + enc(p.mobilePhone) + "</a>"));
+      rows.push(iconRow("line-mobile", "Mobile", '<a href="tel:' + tel + '" ' + link + ">" + enc(p.mobilePhone) + "</a>", contactStyle, "2px"));
     }
     if (p.mail) {
-      rows.push(contactRow("mail", "Email", '<a href="mailto:' + enc(p.mail) + '" ' + link + ">" + enc(p.mail) + "</a>"));
+      rows.push(iconRow("line-mail", "Email", '<a href="mailto:' + enc(p.mail) + '" ' + link + ">" + enc(p.mail) + "</a>", contactStyle, "2px"));
     }
-    rows.push(contactRow("location", "Address", '<span style="color:#8c8c8c;">' + enc(CONFIG.address) + "</span>"));
-    rows.push(contactRow("web", "Website", '<a href="https://' + enc(CONFIG.website) + '" ' + link + ">" + enc(CONFIG.website) + "</a>"));
-    lines.push('<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial, sans-serif; font-size:9pt; color:#8c8c8c; line-height:1.3;">' +
+    rows.push(iconRow("line-location", "Address", enc(CONFIG.address), contactStyle, "2px"));
+    rows.push(iconRow("line-web", "Website", '<a href="https://' + enc(CONFIG.website) + '" ' + link + ">" + enc(CONFIG.website) + "</a>", contactStyle, "2px"));
+
+    lines.push('<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial, sans-serif; border-collapse:collapse;">' +
       rows.join("") + "</table>");
 
     // Logo: 160px wide, original 8:1 proportions (224x28)
