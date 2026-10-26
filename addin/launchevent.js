@@ -90,6 +90,7 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     authority: "https://login.microsoftonline.com/thegdevelopments.com",
     graphUrl: "https://graph.microsoft.com/v1.0/me?$select=displayName,jobTitle,department,mobilePhone",
     logoUrl: "https://raw.githubusercontent.com/gdevs-sig/gdevs/main/g-logo.png",
+    iconBase: "https://gdevs-sig.github.io/gdevs/addin/assets/sig/",   // phone/mail/location/web.png
     address: "KM 22, Cairo-Alex Desert Road, Giza, Egypt",
     website: "thegdevelopments.com",
     header: "X-GDev-Signature",
@@ -107,6 +108,14 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
+  function contactRow(icon, alt, html) {
+    return "<tr>" +
+      '<td style="padding:2px 7px 2px 0; vertical-align:middle; width:16px;">' +
+      '<img src="' + CONFIG.iconBase + icon + '.png" width="16" height="16" alt="' + alt + '" style="display:block; border:0;">' +
+      "</td>" +
+      '<td style="padding:2px 0; vertical-align:middle;">' + html + "</td></tr>";
+  }
+
   function buildSignature(p) {
     var lines = [];
     lines.push('<div style="font-size:14px; font-weight:bold; color:#1f1f1f;">' + enc(p.displayName) + "</div>");
@@ -116,14 +125,20 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
 
     lines.push("<br>");
 
+    // Contact rows: round black icon + text. A nested table keeps icons aligned in every mail app.
+    var link = 'style="color:#1f1f1f; text-decoration:none;"';
+    var rows = [];
     if (p.mobilePhone) {
       var tel = String(p.mobilePhone).replace(/[^\d+]/g, "");
-      lines.push('<div><span style="color:#8a8a8a;">M:</span> <a href="tel:' + tel +
-        '" style="color:#2F6DB5; text-decoration:none;">' + enc(p.mobilePhone) + "</a></div>");
+      rows.push(contactRow("phone", "Phone", '<a href="tel:' + tel + '" ' + link + ">" + enc(p.mobilePhone) + "</a>"));
     }
-    lines.push('<div style="color:#7a7a7a;">' + enc(CONFIG.address) + "</div>");
-    lines.push('<div><a href="https://' + enc(CONFIG.website) + '" style="color:#1f1f1f; text-decoration:underline;">' +
-      enc(CONFIG.website) + "</a></div>");
+    if (p.mail) {
+      rows.push(contactRow("mail", "Email", '<a href="mailto:' + enc(p.mail) + '" ' + link + ">" + enc(p.mail) + "</a>"));
+    }
+    rows.push(contactRow("location", "Address", '<span style="color:#7a7a7a;">' + enc(CONFIG.address) + "</span>"));
+    rows.push(contactRow("web", "Website", '<a href="https://' + enc(CONFIG.website) + '" ' + link + ">" + enc(CONFIG.website) + "</a>"));
+    lines.push('<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial, sans-serif; font-size:12px; line-height:1.25;">' +
+      rows.join("") + "</table>");
 
     return '<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial, sans-serif; font-size:12px; color:#6f6f6f; line-height:1.25;">' +
       "<tr>" +
@@ -138,6 +153,7 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
   function buildTextSignature(p) {
     var lines = [p.displayName, p.jobTitle, p.department, ""];
     if (p.mobilePhone) lines.push("M: " + p.mobilePhone);
+    if (p.mail) lines.push("E: " + p.mail);
     lines.push(CONFIG.address, CONFIG.website);
     return lines.filter(function (l, i) { return l || i === 3; }).join("\n");
   }
@@ -265,6 +281,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     var item = Office.context.mailbox.item;
 
     return getProfile().then(function (profile) {
+      // The signed-in mailbox address (no Graph call needed)
+      profile.mail = profile.mail || String(Office.context.mailbox.userProfile.emailAddress || "").toLowerCase();
       var html = buildSignature(profile);
       var text = buildTextSignature(profile);
       var isText = false;
