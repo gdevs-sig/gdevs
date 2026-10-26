@@ -89,7 +89,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     clientId: "3680e21d-4b7c-4774-99c8-c4fc65a17680",
     authority: "https://login.microsoftonline.com/thegdevelopments.com",
     graphUrl: "https://graph.microsoft.com/v1.0/me?$select=displayName,jobTitle,department,mobilePhone",
-    logoUrl: "https://raw.githubusercontent.com/gdevs-sig/gdevs/main/g-logo.png",
+    // 480x60 (3x) made from the 6620px brand original; shown at 160x20
+    logoUrl: "https://gdevs-sig.github.io/gdevs/addin/assets/g-logo-hd.png",
     iconBase: "https://gdevs-sig.github.io/gdevs/addin/assets/sig/",   // phone/mail/location/web.png
     address: "KM 22, Cairo-Alex Desert Road, Giza, Egypt",
     website: "thegdevelopments.com",
