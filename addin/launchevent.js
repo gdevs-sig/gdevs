@@ -118,15 +118,16 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
 
   function buildSignature(p) {
     var lines = [];
-    lines.push('<div style="font-size:14px; font-weight:bold; color:#1f1f1f;">' + enc(p.displayName) + "</div>");
+    // Type scale: name 11pt bold black, title/department 10pt dark grey, contacts 9pt light grey
+    lines.push('<div style="font-size:11pt; font-weight:bold; color:#000000;">' + enc(p.displayName) + "</div>");
 
     var role = [p.jobTitle, p.department].filter(Boolean).map(enc);
-    if (role.length) lines.push('<div style="font-size:12px; color:#1f1f1f;">' + role.join("<br>") + "</div>");
+    if (role.length) lines.push('<div style="font-size:10pt; color:#444444; padding-top:1px;">' + role.join("<br>") + "</div>");
 
-    lines.push("<br>");
+    lines.push('<div style="font-size:7pt; line-height:7pt;">&nbsp;</div>');
 
     // Contact rows: round black icon + text. A nested table keeps icons aligned in every mail app.
-    var link = 'style="color:#1f1f1f; text-decoration:none;"';
+    var link = 'style="color:#8c8c8c; text-decoration:none;"';
     var rows = [];
     if (p.mobilePhone) {
       var tel = String(p.mobilePhone).replace(/[^\d+]/g, "");
@@ -135,16 +136,17 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     if (p.mail) {
       rows.push(contactRow("mail", "Email", '<a href="mailto:' + enc(p.mail) + '" ' + link + ">" + enc(p.mail) + "</a>"));
     }
-    rows.push(contactRow("location", "Address", '<span style="color:#7a7a7a;">' + enc(CONFIG.address) + "</span>"));
+    rows.push(contactRow("location", "Address", '<span style="color:#8c8c8c;">' + enc(CONFIG.address) + "</span>"));
     rows.push(contactRow("web", "Website", '<a href="https://' + enc(CONFIG.website) + '" ' + link + ">" + enc(CONFIG.website) + "</a>"));
-    lines.push('<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial, sans-serif; font-size:12px; line-height:1.25;">' +
+    lines.push('<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial, sans-serif; font-size:9pt; color:#8c8c8c; line-height:1.3;">' +
       rows.join("") + "</table>");
 
-    return '<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial, sans-serif; font-size:12px; color:#6f6f6f; line-height:1.25;">' +
+    // Logo: 160px wide, original 8:1 proportions (224x28)
+    return '<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial, sans-serif; font-size:9pt; color:#8c8c8c; line-height:1.3;">' +
       "<tr>" +
-      '<td style="vertical-align:middle; padding-right:14px;">' + lines.join("") + "</td>" +
-      '<td style="vertical-align:middle; border-left:2px solid #cfcfcf; padding-left:14px;">' +
-      '<img src="' + CONFIG.logoUrl + '" width="150" alt="G Developments" style="display:block; border:0;">' +
+      '<td style="vertical-align:middle; padding-right:16px;">' + lines.join("") + "</td>" +
+      '<td style="vertical-align:middle; border-left:2px solid #cfcfcf; padding-left:16px;">' +
+      '<img src="' + CONFIG.logoUrl + '" width="160" height="20" alt="G Developments" style="display:block; border:0; width:160px; height:20px;">' +
       "</td></tr></table>";
   }
 
