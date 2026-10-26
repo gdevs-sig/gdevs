@@ -121,29 +121,26 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
 
   function buildSignature(p) {
     var lines = [];
-    // Type scale: name 11pt bold black, title/department 10pt dark grey, contacts 9pt light grey
+    // Name 11pt bold black; job title 10pt black; department 10pt light grey; contacts 9pt black
     lines.push('<div style="font-size:11pt; line-height:15px; font-weight:bold; color:#000000; padding-bottom:3px;">' + enc(p.displayName) + "</div>");
+    if (p.jobTitle) lines.push('<div style="font-size:10pt; line-height:14px; color:#1f1f1f; padding:1px 0;">' + enc(p.jobTitle) + "</div>");
+    if (p.department) lines.push('<div style="font-size:10pt; line-height:14px; color:#8c8c8c; padding:1px 0;">' + enc(p.department) + "</div>");
+    lines.push('<div style="height:6px; line-height:6px; font-size:1px;">&nbsp;</div>');
 
-    var titleStyle = "font-size:10pt; color:#444444;";
-    var contactStyle = "font-size:9pt; color:#8c8c8c;";
-    var link = 'style="color:#8c8c8c; text-decoration:none;"';
+    var contactStyle = "font-size:9pt; color:#1f1f1f;";
+    var link = 'style="color:#1f1f1f; text-decoration:none;"';
     var rows = [];
 
-    // Job title with a black briefcase; department underneath, lined up with the title text
-    if (p.jobTitle) rows.push(iconRow("line-title", "Job title", enc(p.jobTitle), titleStyle, "1px"));
-    if (p.department) rows.push(iconRow(p.jobTitle ? "" : "line-title", "Department", enc(p.department), titleStyle, "1px"));
-    if (rows.length) rows.push('<tr><td colspan="2" style="height:6px; line-height:6px; font-size:1px;">&nbsp;</td></tr>');
-
-    // Contact rows: thin light grey line icons
+    // Contact rows: thin black line icons
     if (p.mobilePhone) {
       var tel = String(p.mobilePhone).replace(/[^\d+]/g, "");
-      rows.push(iconRow("line-mobile", "Mobile", '<a href="tel:' + tel + '" ' + link + ">" + enc(p.mobilePhone) + "</a>", contactStyle, "2px"));
+      rows.push(iconRow("line-mobile-dark", "Mobile", '<a href="tel:' + tel + '" ' + link + ">" + enc(p.mobilePhone) + "</a>", contactStyle, "2px"));
     }
     if (p.mail) {
-      rows.push(iconRow("line-mail", "Email", '<a href="mailto:' + enc(p.mail) + '" ' + link + ">" + enc(p.mail) + "</a>", contactStyle, "2px"));
+      rows.push(iconRow("line-mail-dark", "Email", '<a href="mailto:' + enc(p.mail) + '" ' + link + ">" + enc(p.mail) + "</a>", contactStyle, "2px"));
     }
-    rows.push(iconRow("line-location", "Address", enc(CONFIG.address), contactStyle, "2px"));
-    rows.push(iconRow("line-web", "Website", '<a href="https://' + enc(CONFIG.website) + '" ' + link + ">" + enc(CONFIG.website) + "</a>", contactStyle, "2px"));
+    rows.push(iconRow("line-location-dark", "Address", enc(CONFIG.address), contactStyle, "2px"));
+    rows.push(iconRow("line-web-dark", "Website", '<a href="https://' + enc(CONFIG.website) + '" ' + link + ">" + enc(CONFIG.website) + "</a>", contactStyle, "2px"));
 
     lines.push('<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial, sans-serif; border-collapse:collapse;">' +
       rows.join("") + "</table>");
