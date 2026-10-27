@@ -198,7 +198,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       '<td style="' + base + ' vertical-align:middle; padding:0 16px 0 0; font-size:9pt; line-height:14px;">' +
       '<table cellpadding="0" cellspacing="0" border="0" style="' + base + ' border-collapse:collapse;">' + rows.join("") + "</table>" +
       "</td>" +
-      '<td style="' + base + ' vertical-align:middle; border-left:2px solid #cfcfcf; padding:0 0 0 16px; font-size:9pt; line-height:20px;">' +
+      // Fixed width (16 padding + 160 logo + 4 spare): Word otherwise sizes the column without the padding and trims the logo
+      '<td width="180" style="font-family:Arial, sans-serif; margin:0; mso-line-height-rule:at-least; width:180px; min-width:180px; vertical-align:middle; border-left:2px solid #cfcfcf; padding:0 4px 0 16px; font-size:9pt; line-height:20px;">' +
       '<img src="' + CONFIG.logoUrl + '" width="160" height="20" alt="G Developments" style="display:block; border:0; width:160px; height:20px;">' +
       "</td></tr></table>";
   }
