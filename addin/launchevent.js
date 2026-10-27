@@ -168,11 +168,12 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
         text + "</td></tr>";
     }
     function contact(icon, alt, inner) {
+      // Icon cell uses "at least" (not "exactly"): Word clips images that don't fit an exact line
       return "<tr>" +
-        '<td style="' + base + ' width:14px; font-size:9pt; line-height:14px; padding:2px 8px 2px 0; vertical-align:middle;">' +
-        '<img src="' + CONFIG.iconBase + icon + '.png" width="14" height="14" alt="' + alt + '" style="display:block; border:0; width:14px; height:14px;">' +
+        '<td style="font-family:Arial, sans-serif; margin:0; mso-line-height-rule:at-least; width:14px; font-size:9pt; line-height:16px; padding:1px 8px 1px 0; vertical-align:middle;">' +
+        '<img src="' + CONFIG.iconBase + icon + '.png" width="14" height="14" alt="' + alt + '" style="display:block; border:0; width:14px; height:14px; vertical-align:middle;">' +
         "</td>" +
-        '<td style="' + base + ' font-size:9pt; line-height:14px; color:#1f1f1f; padding:2px 0; vertical-align:middle; white-space:nowrap;">' + inner + "</td></tr>";
+        '<td style="' + base + ' font-size:9pt; line-height:16px; color:#1f1f1f; padding:1px 0; vertical-align:middle; white-space:nowrap;">' + inner + "</td></tr>";
     }
     function linked(href, text) {
       return '<a href="' + href + '" style="color:#1f1f1f; text-decoration:none;">' +
@@ -180,9 +181,9 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     }
 
     var rows = [];
-    rows.push(line("<b>" + enc(p.displayName) + "</b>", "11pt", 15, "#000000", " padding-bottom:3px; font-weight:bold;"));
-    if (p.jobTitle) rows.push(line(enc(p.jobTitle), "10pt", 14, "#1f1f1f", " padding:1px 0;"));
-    if (p.department) rows.push(line(enc(p.department), "10pt", 14, "#8c8c8c", " padding:1px 0;"));
+    rows.push(line("<b>" + enc(p.displayName) + "</b>", "11pt", 16, "#000000", " padding-bottom:2px; font-weight:bold;"));
+    if (p.jobTitle) rows.push(line(enc(p.jobTitle), "10pt", 15, "#1f1f1f", " padding:1px 0;"));
+    if (p.department) rows.push(line(enc(p.department), "10pt", 15, "#8c8c8c", " padding:1px 0;"));
     rows.push(line("&nbsp;", "1px", 6, "#ffffff", " height:6px;"));
     if (p.mobilePhone) {
       var tel = String(p.mobilePhone).replace(/[^\d+]/g, "");
