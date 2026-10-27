@@ -98,8 +98,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     cacheKey: "gdevProfile",
     // Plain-text messages are switched to HTML (full signature) for these mailboxes only
     htmlSwitchUsers: ["ahmed.elserafy@thegdevelopments.com"],
-    // Pilot: Word-safe layout (stays compact in Classic Outlook replies) for these mailboxes only
-    wordSafeUsers: ["ahmed.elserafy@thegdevelopments.com"],
+    // Word-safe layout (stays compact in Classic Outlook, incl. replies). Empty list = everyone.
+    wordSafeUsers: [],
     cacheHours: 12,   // refresh directory details at most twice a day
     graphTimeoutMs: 4000
   };
