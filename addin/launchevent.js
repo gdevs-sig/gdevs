@@ -98,6 +98,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     cacheKey: "gdevProfile",
     // Plain-text messages are switched to HTML (full signature) for these mailboxes only
     htmlSwitchUsers: ["ahmed.elserafy@thegdevelopments.com"],
+    // Pilot: Word-safe layout (stays compact in Classic Outlook replies) for these mailboxes only
+    wordSafeUsers: ["ahmed.elserafy@thegdevelopments.com"],
     cacheHours: 12,   // refresh directory details at most twice a day
     graphTimeoutMs: 4000
   };
@@ -153,6 +155,56 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       '<td style="vertical-align:middle; border-left:2px solid #cfcfcf; padding-left:16px;">' +
       '<img src="' + CONFIG.logoUrl + '" width="160" height="20" alt="G Developments" style="display:block; border:0; width:160px; height:20px;">' +
       "</td></tr></table>";
+  }
+
+  // Same design, written so Classic Outlook (Word engine) keeps it compact when someone
+  // replies or forwards: every line is a table row with an exact line height
+  // (mso-line-height-rule), zero margins, a font size on every cell (including the icon
+  // cells), and link styling repeated on an inner span so Word's hyperlink style can't win.
+  function buildSignatureWordSafe(p) {
+    var base = "font-family:Arial, sans-serif; margin:0; mso-line-height-rule:exactly;";
+    function line(text, size, px, color, extra) {
+      return '<tr><td colspan="2" style="' + base + " font-size:" + size + "; line-height:" + px + "px; color:" + color + "; padding:0;" + (extra || "") + '">' +
+        text + "</td></tr>";
+    }
+    function contact(icon, alt, inner) {
+      return "<tr>" +
+        '<td style="' + base + ' width:14px; font-size:9pt; line-height:14px; padding:2px 8px 2px 0; vertical-align:middle;">' +
+        '<img src="' + CONFIG.iconBase + icon + '.png" width="14" height="14" alt="' + alt + '" style="display:block; border:0; width:14px; height:14px;">' +
+        "</td>" +
+        '<td style="' + base + ' font-size:9pt; line-height:14px; color:#1f1f1f; padding:2px 0; vertical-align:middle; white-space:nowrap;">' + inner + "</td></tr>";
+    }
+    function linked(href, text) {
+      return '<a href="' + href + '" style="color:#1f1f1f; text-decoration:none;">' +
+        '<span style="color:#1f1f1f; text-decoration:none;">' + text + "</span></a>";
+    }
+
+    var rows = [];
+    rows.push(line("<b>" + enc(p.displayName) + "</b>", "11pt", 15, "#000000", " padding-bottom:3px; font-weight:bold;"));
+    if (p.jobTitle) rows.push(line(enc(p.jobTitle), "10pt", 14, "#1f1f1f", " padding:1px 0;"));
+    if (p.department) rows.push(line(enc(p.department), "10pt", 14, "#8c8c8c", " padding:1px 0;"));
+    rows.push(line("&nbsp;", "1px", 6, "#ffffff", " height:6px;"));
+    if (p.mobilePhone) {
+      var tel = String(p.mobilePhone).replace(/[^\d+]/g, "");
+      rows.push(contact("line-mobile-dark", "Mobile", linked("tel:" + tel, enc(p.mobilePhone))));
+    }
+    if (p.mail) rows.push(contact("line-mail-dark", "Email", linked("mailto:" + enc(p.mail), enc(p.mail))));
+    rows.push(contact("line-location-dark", "Address", '<span style="color:#1f1f1f;">' + enc(CONFIG.address) + "</span>"));
+    rows.push(contact("line-web-dark", "Website", linked("https://" + enc(CONFIG.website), enc(CONFIG.website))));
+
+    return '<table cellpadding="0" cellspacing="0" border="0" style="' + base + ' border-collapse:collapse; font-size:9pt; line-height:14px;">' +
+      "<tr>" +
+      '<td style="' + base + ' vertical-align:middle; padding:0 16px 0 0; font-size:9pt; line-height:14px;">' +
+      '<table cellpadding="0" cellspacing="0" border="0" style="' + base + ' border-collapse:collapse;">' + rows.join("") + "</table>" +
+      "</td>" +
+      '<td style="' + base + ' vertical-align:middle; border-left:2px solid #cfcfcf; padding:0 0 0 16px; font-size:9pt; line-height:20px;">' +
+      '<img src="' + CONFIG.logoUrl + '" width="160" height="20" alt="G Developments" style="display:block; border:0; width:160px; height:20px;">' +
+      "</td></tr></table>";
+  }
+
+  function wordSafeEnabled() {
+    var me = String(Office.context.mailbox.userProfile.emailAddress || "").toLowerCase();
+    return CONFIG.wordSafeUsers.length === 0 || CONFIG.wordSafeUsers.indexOf(me) !== -1;
   }
 
   // Plain-text version, used when the message is in plain-text format
@@ -290,7 +342,7 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     return getProfile().then(function (profile) {
       // The signed-in mailbox address (no Graph call needed)
       profile.mail = profile.mail || String(Office.context.mailbox.userProfile.emailAddress || "").toLowerCase();
-      var html = buildSignature(profile);
+      var html = wordSafeEnabled() ? buildSignatureWordSafe(profile) : buildSignature(profile);
       var text = buildTextSignature(profile);
       var isText = false;
       var steps = Promise.resolve();
