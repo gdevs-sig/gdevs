@@ -102,7 +102,7 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     wordSafeUsers: [],
     // Spacing test: the ribbon button inserts layout variants when the subject contains "sigtest"
     spacingTestUsers: ["ahmed.elserafy@thegdevelopments.com"],
-    // Pilot: contact rows as exact 18px lines (layout B), so Classic Outlook's send keeps the spacing
+    // Pilot: icon and text in one cell (layout E), so Classic Outlook's send keeps the spacing
     exactRowsUsers: ["ahmed.elserafy@thegdevelopments.com"],
     cacheHours: 12,   // refresh directory details at most twice a day
     graphTimeoutMs: 4000
@@ -167,7 +167,7 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
   // cells), and link styling repeated on an inner span so Word's hyperlink style can't win.
   // variant (spacing test only): { mode: "cells" | "inline", px, rule }; omitted = live layout
   function buildSignatureWordSafe(p, variant) {
-    if (!variant && exactRowsEnabled()) variant = { mode: "cells", rule: "exactly", px: 18 };
+    if (!variant && exactRowsEnabled()) variant = { mode: "inline", rule: "at-least", px: 16 };
     var base = "font-family:Arial, sans-serif; margin:0; mso-line-height-rule:exactly;";
     function line(text, size, px, color, extra) {
       return '<tr><td colspan="2" style="' + base + " font-size:" + size + "; line-height:" + px + "px; color:" + color + "; padding:0;" + (extra || "") + '">' +
