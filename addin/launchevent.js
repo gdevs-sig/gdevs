@@ -102,6 +102,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     wordSafeUsers: [],
     // Spacing test: the ribbon button inserts layout variants when the subject contains "sigtest"
     spacingTestUsers: ["ahmed.elserafy@thegdevelopments.com"],
+    // Pilot: contact rows as exact 18px lines (layout B), so Classic Outlook's send keeps the spacing
+    exactRowsUsers: ["ahmed.elserafy@thegdevelopments.com"],
     cacheHours: 12,   // refresh directory details at most twice a day
     graphTimeoutMs: 4000
   };
@@ -165,6 +167,7 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
   // cells), and link styling repeated on an inner span so Word's hyperlink style can't win.
   // variant (spacing test only): { mode: "cells" | "inline", px, rule }; omitted = live layout
   function buildSignatureWordSafe(p, variant) {
+    if (!variant && exactRowsEnabled()) variant = { mode: "cells", rule: "exactly", px: 18 };
     var base = "font-family:Arial, sans-serif; margin:0; mso-line-height-rule:exactly;";
     function line(text, size, px, color, extra) {
       return '<tr><td colspan="2" style="' + base + " font-size:" + size + "; line-height:" + px + "px; color:" + color + "; padding:0;" + (extra || "") + '">' +
@@ -231,6 +234,11 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       return '<p style="font-family:Arial, sans-serif; font-size:9pt; color:#c00000; margin:16px 0 6px 0;">' + enc(v.label) + "</p>" +
         buildSignatureWordSafe(p, v.mode ? v : undefined);
     }).join("");
+  }
+
+  function exactRowsEnabled() {
+    var me = String(Office.context.mailbox.userProfile.emailAddress || "").toLowerCase();
+    return CONFIG.exactRowsUsers.indexOf(me) !== -1;
   }
 
   function spacingTestEnabled() {
