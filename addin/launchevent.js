@@ -100,6 +100,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     htmlSwitchUsers: ["ahmed.elserafy@thegdevelopments.com"],
     // Word-safe layout (stays compact in Classic Outlook, incl. replies). Empty list = everyone.
     wordSafeUsers: [],
+    // Pilot: tighter contact rows (16px instead of 18px). Empty list = everyone.
+    tightRowsUsers: ["ahmed.elserafy@thegdevelopments.com"],
     cacheHours: 12,   // refresh directory details at most twice a day
     graphTimeoutMs: 4000
   };
@@ -167,13 +169,14 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       return '<tr><td colspan="2" style="' + base + " font-size:" + size + "; line-height:" + px + "px; color:" + color + "; padding:0;" + (extra || "") + '">' +
         text + "</td></tr>";
     }
+    var rowPx = tightRowsEnabled() ? 14 : 16;
     function contact(icon, alt, inner) {
       // Icon cell uses "at least" (not "exactly"): Word clips images that don't fit an exact line
       return "<tr>" +
-        '<td style="font-family:Arial, sans-serif; margin:0; mso-line-height-rule:at-least; width:14px; font-size:9pt; line-height:16px; padding:1px 8px 1px 0; vertical-align:middle;">' +
+        '<td style="font-family:Arial, sans-serif; margin:0; mso-line-height-rule:at-least; width:14px; font-size:9pt; line-height:' + rowPx + 'px; padding:1px 8px 1px 0; vertical-align:middle;">' +
         '<img src="' + CONFIG.iconBase + icon + '.png" width="14" height="14" alt="' + alt + '" style="display:block; border:0; width:14px; height:14px; vertical-align:middle;">' +
         "</td>" +
-        '<td style="' + base + ' font-size:9pt; line-height:16px; color:#1f1f1f; padding:1px 0; vertical-align:middle; white-space:nowrap;">' + inner + "</td></tr>";
+        '<td style="' + base + ' font-size:9pt; line-height:' + rowPx + 'px; color:#1f1f1f; padding:1px 0; vertical-align:middle; white-space:nowrap;">' + inner + "</td></tr>";
     }
     function linked(href, text) {
       return '<a href="' + href + '" style="color:#1f1f1f; text-decoration:none;">' +
@@ -202,6 +205,11 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       '<td width="180" style="font-family:Arial, sans-serif; margin:0; mso-line-height-rule:at-least; width:180px; min-width:180px; vertical-align:middle; border-left:2px solid #cfcfcf; padding:0 4px 0 16px; font-size:9pt; line-height:20px;">' +
       '<img src="' + CONFIG.logoUrl + '" width="160" height="20" alt="G Developments" style="display:block; border:0; width:160px; height:20px;">' +
       "</td></tr></table>";
+  }
+
+  function tightRowsEnabled() {
+    var me = String(Office.context.mailbox.userProfile.emailAddress || "").toLowerCase();
+    return CONFIG.tightRowsUsers.length === 0 || CONFIG.tightRowsUsers.indexOf(me) !== -1;
   }
 
   function wordSafeEnabled() {
