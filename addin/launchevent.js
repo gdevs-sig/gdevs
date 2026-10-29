@@ -100,10 +100,6 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     htmlSwitchUsers: ["ahmed.elserafy@thegdevelopments.com"],
     // Word-safe layout (stays compact in Classic Outlook, incl. replies). Empty list = everyone.
     wordSafeUsers: [],
-    // Spacing test: the ribbon button inserts layout variants when the subject contains "sigtest"
-    spacingTestUsers: ["ahmed.elserafy@thegdevelopments.com"],
-    // Pilot: icon and text in one cell (layout E), so Classic Outlook's send keeps the spacing
-    exactRowsUsers: ["ahmed.elserafy@thegdevelopments.com"],
     cacheHours: 12,   // refresh directory details at most twice a day
     graphTimeoutMs: 4000
   };
@@ -165,29 +161,18 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
   // replies or forwards: every line is a table row with an exact line height
   // (mso-line-height-rule), zero margins, a font size on every cell (including the icon
   // cells), and link styling repeated on an inner span so Word's hyperlink style can't win.
-  // variant (spacing test only): { mode: "cells" | "inline", px, rule }; omitted = live layout
-  function buildSignatureWordSafe(p, variant) {
-    if (!variant && exactRowsEnabled()) variant = { mode: "inline", rule: "at-least", px: 16 };
+  function buildSignatureWordSafe(p) {
     var base = "font-family:Arial, sans-serif; margin:0; mso-line-height-rule:exactly;";
     function line(text, size, px, color, extra) {
       return '<tr><td colspan="2" style="' + base + " font-size:" + size + "; line-height:" + px + "px; color:" + color + "; padding:0;" + (extra || "") + '">' +
         text + "</td></tr>";
     }
+    // Icon and text share one cell: an image-only cell loses its line height when Classic
+    // Outlook sends, which spread the rows out in other clients. "At least" never clips the icon.
     function contact(icon, alt, inner) {
-      var img = '<img src="' + CONFIG.iconBase + icon + '.png" width="14" height="14" alt="' + alt + '" style="display:block; border:0; width:14px; height:14px; vertical-align:middle;">';
-      if (variant && variant.mode === "inline") {
-        return '<tr><td colspan="2" style="font-family:Arial, sans-serif; margin:0; mso-line-height-rule:' + variant.rule + '; font-size:9pt; line-height:' + variant.px + 'px; color:#1f1f1f; padding:0; white-space:nowrap;">' +
-          img.replace("display:block; ", "") + "&nbsp;&nbsp;" + inner + "</td></tr>";
-      }
-      if (variant) {
-        return "<tr>" +
-          '<td style="font-family:Arial, sans-serif; margin:0; mso-line-height-rule:' + variant.rule + '; width:14px; font-size:9pt; line-height:' + variant.px + 'px; padding:0 8px 0 0; vertical-align:middle;">' + img + "</td>" +
-          '<td style="' + base + ' font-size:9pt; line-height:' + variant.px + 'px; color:#1f1f1f; padding:0; vertical-align:middle; white-space:nowrap;">' + inner + "</td></tr>";
-      }
-      // Icon cell uses "at least" (not "exactly"): Word clips images that don't fit an exact line
-      return "<tr>" +
-        '<td style="font-family:Arial, sans-serif; margin:0; mso-line-height-rule:at-least; width:14px; font-size:9pt; line-height:16px; padding:1px 8px 1px 0; vertical-align:middle;">' + img + "</td>" +
-        '<td style="' + base + ' font-size:9pt; line-height:16px; color:#1f1f1f; padding:1px 0; vertical-align:middle; white-space:nowrap;">' + inner + "</td></tr>";
+      var img = '<img src="' + CONFIG.iconBase + icon + '.png" width="14" height="14" alt="' + alt + '" style="border:0; width:14px; height:14px; vertical-align:middle;">';
+      return '<tr><td colspan="2" style="font-family:Arial, sans-serif; margin:0; mso-line-height-rule:at-least; font-size:9pt; line-height:16px; color:#1f1f1f; padding:0; white-space:nowrap;">' +
+        img + "&nbsp;&nbsp;" + inner + "</td></tr>";
     }
     function linked(href, text) {
       return '<a href="' + href + '" style="color:#1f1f1f; text-decoration:none;">' +
@@ -216,34 +201,6 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       '<td width="180" style="font-family:Arial, sans-serif; margin:0; mso-line-height-rule:at-least; width:180px; min-width:180px; vertical-align:middle; border-left:2px solid #cfcfcf; padding:0 4px 0 16px; font-size:9pt; line-height:20px;">' +
       '<img src="' + CONFIG.logoUrl + '" width="160" height="20" alt="G Developments" style="display:block; border:0; width:160px; height:20px;">' +
       "</td></tr></table>";
-  }
-
-  // One email, several contact-row layouts, so a single send from Classic Outlook shows
-  // which one survives Word's rewrite (no clipped icons, same spacing in New Outlook).
-  var SPACING_VARIANTS = [
-    { label: "A: live layout (at-least 16px + 1px padding)" },
-    { label: "B: exact 18px, no padding", mode: "cells", rule: "exactly", px: 18 },
-    { label: "C: exact 17px, no padding", mode: "cells", rule: "exactly", px: 17 },
-    { label: "D: exact 16px, no padding", mode: "cells", rule: "exactly", px: 16 },
-    { label: "E: icon and text in one cell, at-least 16px", mode: "inline", rule: "at-least", px: 16 },
-    { label: "F: icon and text in one cell, exact 18px", mode: "inline", rule: "exactly", px: 18 }
-  ];
-
-  function buildSpacingTest(p) {
-    return SPACING_VARIANTS.map(function (v) {
-      return '<p style="font-family:Arial, sans-serif; font-size:9pt; color:#c00000; margin:16px 0 6px 0;">' + enc(v.label) + "</p>" +
-        buildSignatureWordSafe(p, v.mode ? v : undefined);
-    }).join("");
-  }
-
-  function exactRowsEnabled() {
-    var me = String(Office.context.mailbox.userProfile.emailAddress || "").toLowerCase();
-    return CONFIG.exactRowsUsers.indexOf(me) !== -1;
-  }
-
-  function spacingTestEnabled() {
-    var me = String(Office.context.mailbox.userProfile.emailAddress || "").toLowerCase();
-    return CONFIG.spacingTestUsers.indexOf(me) !== -1;
   }
 
   function wordSafeEnabled() {
@@ -380,14 +337,13 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
 
   // ---------- insertion ----------
 
-  function applySignature(spacingTest) {
+  function applySignature() {
     var item = Office.context.mailbox.item;
 
     return getProfile().then(function (profile) {
       // The signed-in mailbox address (no Graph call needed)
       profile.mail = profile.mail || String(Office.context.mailbox.userProfile.emailAddress || "").toLowerCase();
-      var html = spacingTest ? buildSpacingTest(profile)
-        : wordSafeEnabled() ? buildSignatureWordSafe(profile) : buildSignature(profile);
+      var html = wordSafeEnabled() ? buildSignatureWordSafe(profile) : buildSignature(profile);
       var text = buildTextSignature(profile);
       var isText = false;
       var steps = Promise.resolve();
@@ -440,8 +396,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     });
   }
 
-  function onNewMessageComposeHandler(event, spacingTest) {
-    applySignature(spacingTest)
+  function onNewMessageComposeHandler(event) {
+    applySignature()
       .catch(function (error) { console.log("G Signature: " + (error && error.message)); })
       .then(function () { event.completed(); });
   }
@@ -449,10 +405,7 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
   // Ribbon button: always re-reads directory details, then re-inserts
   function applySignatureCommand(event) {
     try { Office.context.roamingSettings.remove(CONFIG.cacheKey); } catch (e) { /* ignore */ }
-    if (!spacingTestEnabled()) return onNewMessageComposeHandler(event);
-    office(function (cb) { Office.context.mailbox.item.subject.getAsync(cb); })
-      .catch(function () { return ""; })
-      .then(function (subject) { onNewMessageComposeHandler(event, /sigtest/i.test(subject || "")); });
+    onNewMessageComposeHandler(event);
   }
 
   if (typeof Office !== "undefined") {
