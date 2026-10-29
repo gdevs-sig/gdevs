@@ -169,11 +169,17 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       return '<tr><td colspan="2" style="' + base + " font-size:" + size + "; line-height:" + px + "px; color:" + color + "; padding:0;" + (extra || "") + '">' +
         text + "</td></tr>";
     }
-    var rowPx = tightRowsEnabled() ? 14 : 16;
+    var tight = tightRowsEnabled();
+    var rowPx = tight ? 14 : 16;
+    // Pilot: an image-only cell loses its "at least" line height when Classic Outlook sends,
+    // so other clients fall back to an 11pt line. Exact 14px with a 1px font keeps it level.
+    var iconCellStyle = tight
+      ? "mso-line-height-rule:exactly; width:14px; font-size:1px; line-height:14px;"
+      : "mso-line-height-rule:at-least; width:14px; font-size:9pt; line-height:16px;";
     function contact(icon, alt, inner) {
       // Icon cell uses "at least" (not "exactly"): Word clips images that don't fit an exact line
       return "<tr>" +
-        '<td style="font-family:Arial, sans-serif; margin:0; mso-line-height-rule:at-least; width:14px; font-size:9pt; line-height:' + rowPx + 'px; padding:1px 8px 1px 0; vertical-align:middle;">' +
+        '<td style="font-family:Arial, sans-serif; margin:0; ' + iconCellStyle + ' padding:1px 8px 1px 0; vertical-align:middle;">' +
         '<img src="' + CONFIG.iconBase + icon + '.png" width="14" height="14" alt="' + alt + '" style="display:block; border:0; width:14px; height:14px; vertical-align:middle;">' +
         "</td>" +
         '<td style="' + base + ' font-size:9pt; line-height:' + rowPx + 'px; color:#1f1f1f; padding:1px 0; vertical-align:middle; white-space:nowrap;">' + inner + "</td></tr>";
