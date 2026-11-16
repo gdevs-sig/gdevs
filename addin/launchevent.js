@@ -89,11 +89,24 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     clientId: "3680e21d-4b7c-4774-99c8-c4fc65a17680",
     authority: "https://login.microsoftonline.com/thegdevelopments.com",
     graphUrl: "https://graph.microsoft.com/v1.0/me?$select=displayName,jobTitle,department,mobilePhone",
-    // 480x60 (3x) made from the 6620px brand original; shown at 160x20
-    logoUrl: "https://gdevs-sig.github.io/gdevs/addin/assets/g-logo-hd.png",
     iconBase: "https://gdevs-sig.github.io/gdevs/addin/assets/sig/",   // phone/mail/location/web.png
-    address: "KM 22, Cairo-Alex Desert Road, Giza, Egypt",
-    website: "thegdevelopments.com",
+    // Logos are 3x the size shown. A brand with no address leaves out the address row.
+    brands: {
+      gdev: {
+        logo: { url: "https://gdevs-sig.github.io/gdevs/addin/assets/g-logo-hd.png", width: 160, height: 20, alt: "G Developments" },
+        address: "KM 22, Cairo-Alex Desert Road, Giza, Egypt",
+        website: "thegdevelopments.com"
+      },
+      gcom: {
+        logo: { url: "https://gdevs-sig.github.io/gdevs/addin/assets/g-communities-logo-hd.png", width: 160, height: 31, alt: "G Communities" },
+        address: "",
+        website: "gcommunities.eg"
+      }
+    },
+    // Members of this Entra group get the G Communities signature (Object ID; empty = nobody)
+    communitiesGroupId: "",
+    // Pilot: these mailboxes get the G Communities signature regardless of group
+    communitiesPilotUsers: ["ahmed.elserafy@thegdevelopments.com"],
     header: "X-GDev-Signature",
     cacheKey: "gdevProfile",
     // Plain-text messages are switched to HTML (full signature) for these mailboxes only
@@ -122,7 +135,18 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       '<td style="padding:' + padding + ' 0; vertical-align:middle; line-height:14px; ' + textStyle + '">' + html + "</td></tr>";
   }
 
+  function brandFor(p) {
+    var me = String(Office.context.mailbox.userProfile.emailAddress || "").toLowerCase();
+    if (CONFIG.communitiesPilotUsers.indexOf(me) !== -1 || p.brand === "gcom") return CONFIG.brands.gcom;
+    return CONFIG.brands.gdev;
+  }
+
+  function logoImg(b) {
+    return '<img src="' + b.logo.url + '" width="' + b.logo.width + '" height="' + b.logo.height + '" alt="' + b.logo.alt + '" style="display:block; border:0; width:' + b.logo.width + "px; height:" + b.logo.height + 'px;">';
+  }
+
   function buildSignature(p) {
+    var b = brandFor(p);
     var lines = [];
     // Name 11pt bold black; job title 10pt black; department 10pt light grey; contacts 9pt black
     lines.push('<div style="font-size:11pt; line-height:15px; font-weight:bold; color:#000000; padding-bottom:3px;">' + enc(p.displayName) + "</div>");
@@ -142,8 +166,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     if (p.mail) {
       rows.push(iconRow("line-mail-dark", "Email", '<a href="mailto:' + enc(p.mail) + '" ' + link + ">" + enc(p.mail) + "</a>", contactStyle, "2px"));
     }
-    rows.push(iconRow("line-location-dark", "Address", enc(CONFIG.address), contactStyle, "2px"));
-    rows.push(iconRow("line-web-dark", "Website", '<a href="https://' + enc(CONFIG.website) + '" ' + link + ">" + enc(CONFIG.website) + "</a>", contactStyle, "2px"));
+    if (b.address) rows.push(iconRow("line-location-dark", "Address", enc(b.address), contactStyle, "2px"));
+    rows.push(iconRow("line-web-dark", "Website", '<a href="https://' + enc(b.website) + '" ' + link + ">" + enc(b.website) + "</a>", contactStyle, "2px"));
 
     lines.push('<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial, sans-serif; border-collapse:collapse;">' +
       rows.join("") + "</table>");
@@ -153,7 +177,7 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       "<tr>" +
       '<td style="vertical-align:middle; padding-right:16px;">' + lines.join("") + "</td>" +
       '<td style="vertical-align:middle; border-left:2px solid #cfcfcf; padding-left:16px;">' +
-      '<img src="' + CONFIG.logoUrl + '" width="160" height="20" alt="G Developments" style="display:block; border:0; width:160px; height:20px;">' +
+      logoImg(b) +
       "</td></tr></table>";
   }
 
@@ -162,6 +186,7 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
   // (mso-line-height-rule), zero margins, a font size on every cell (including the icon
   // cells), and link styling repeated on an inner span so Word's hyperlink style can't win.
   function buildSignatureWordSafe(p) {
+    var b = brandFor(p);
     var base = "font-family:Arial, sans-serif; margin:0; mso-line-height-rule:exactly;";
     function line(text, size, px, color, extra) {
       return '<tr><td colspan="2" style="' + base + " font-size:" + size + "; line-height:" + px + "px; color:" + color + "; padding:0;" + (extra || "") + '">' +
@@ -189,8 +214,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       rows.push(contact("line-mobile-dark", "Mobile", linked("tel:" + tel, enc(p.mobilePhone))));
     }
     if (p.mail) rows.push(contact("line-mail-dark", "Email", linked("mailto:" + enc(p.mail), enc(p.mail))));
-    rows.push(contact("line-location-dark", "Address", '<span style="color:#1f1f1f;">' + enc(CONFIG.address) + "</span>"));
-    rows.push(contact("line-web-dark", "Website", linked("https://" + enc(CONFIG.website), enc(CONFIG.website))));
+    if (b.address) rows.push(contact("line-location-dark", "Address", '<span style="color:#1f1f1f;">' + enc(b.address) + "</span>"));
+    rows.push(contact("line-web-dark", "Website", linked("https://" + enc(b.website), enc(b.website))));
 
     return '<table cellpadding="0" cellspacing="0" border="0" style="' + base + ' border-collapse:collapse; font-size:9pt; line-height:14px;">' +
       "<tr>" +
@@ -198,8 +223,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       '<table cellpadding="0" cellspacing="0" border="0" style="' + base + ' border-collapse:collapse;">' + rows.join("") + "</table>" +
       "</td>" +
       // Fixed width (16 padding + 160 logo + 4 spare): Word otherwise sizes the column without the padding and trims the logo
-      '<td width="180" style="font-family:Arial, sans-serif; margin:0; mso-line-height-rule:at-least; width:180px; min-width:180px; vertical-align:middle; border-left:2px solid #cfcfcf; padding:0 4px 0 16px; font-size:9pt; line-height:20px;">' +
-      '<img src="' + CONFIG.logoUrl + '" width="160" height="20" alt="G Developments" style="display:block; border:0; width:160px; height:20px;">' +
+      '<td width="180" style="font-family:Arial, sans-serif; margin:0; mso-line-height-rule:at-least; width:180px; min-width:180px; vertical-align:middle; border-left:2px solid #cfcfcf; padding:0 4px 0 16px; font-size:9pt; line-height:' + b.logo.height + 'px;">' +
+      logoImg(b) +
       "</td></tr></table>";
   }
 
@@ -214,7 +239,9 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     var lines = [p.displayName, p.jobTitle, p.department, ""];
     if (p.mobilePhone) lines.push("M: " + p.mobilePhone);
     if (p.mail) lines.push("E: " + p.mail);
-    lines.push(CONFIG.address, CONFIG.website);
+    var b = brandFor(p);
+    if (b.address) lines.push(b.address);
+    lines.push(b.website);
     return lines.filter(function (l, i) { return l || i === 3; }).join("\n");
   }
 
@@ -268,11 +295,26 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     return pcaPromise
       .then(function (pca) { return pca.acquireTokenSilent({ scopes: ["User.Read"] }); })
       .then(function (token) {
-        return fetch(CONFIG.graphUrl, { headers: { Authorization: "Bearer " + token.accessToken } });
-      })
-      .then(function (response) {
-        if (!response.ok) throw new Error("Graph returned " + response.status);
-        return response.json();
+        var auth = { Authorization: "Bearer " + token.accessToken };
+        return fetch(CONFIG.graphUrl, { headers: auth })
+          .then(function (response) {
+            if (!response.ok) throw new Error("Graph returned " + response.status);
+            return response.json();
+          })
+          .then(function (p) {
+            if (!CONFIG.communitiesGroupId) { p.brand = "gdev"; return p; }
+            // Group check needs only User.Read; on failure the brand stays unknown (cache decides)
+            return fetch("https://graph.microsoft.com/v1.0/me/checkMemberGroups", {
+              method: "POST",
+              headers: { Authorization: auth.Authorization, "Content-Type": "application/json" },
+              body: JSON.stringify({ groupIds: [CONFIG.communitiesGroupId] })
+            })
+              .then(function (response) { return response.ok ? response.json() : null; })
+              .then(function (result) {
+                if (result) p.brand = (result.value || []).length ? "gcom" : "gdev";
+                return p;
+              }, function () { return p; });
+          });
       });
   }
 
@@ -287,7 +329,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
       .then(function (p) {
         var profile = {
           displayName: p.displayName, jobTitle: p.jobTitle,
-          department: p.department, mobilePhone: p.mobilePhone
+          department: p.department, mobilePhone: p.mobilePhone,
+          brand: p.brand || (cached && cached.brand)
         };
         return writeCache(profile).then(function () { return profile; });
       })
