@@ -106,7 +106,7 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
     // Members of this Entra group get the G Communities signature (Object ID; empty = nobody)
     communitiesGroupId: "",
     // Pilot: these mailboxes get the G Communities signature regardless of group
-    communitiesPilotUsers: ["ahmed.elserafy@thegdevelopments.com"],
+    communitiesPilotUsers: [],
     header: "X-GDev-Signature",
     cacheKey: "gdevProfile",
     // Plain-text messages are switched to HTML (full signature) for these mailboxes only
