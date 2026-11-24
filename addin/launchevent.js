@@ -97,16 +97,25 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
         address: "KM 22, Cairo-Alex Desert Road, Giza, Egypt",
         website: "thegdevelopments.com"
       },
+      gdevSupplyChain: {
+        logo: { url: "https://gdevs-sig.github.io/gdevs/addin/assets/g-logo-hd.png", width: 160, height: 20, alt: "G Developments" },
+        address: "City View Compound, Gate 5, Building 15",
+        website: "thegdevelopments.com"
+      },
       gcom: {
         logo: { url: "https://gdevs-sig.github.io/gdevs/addin/assets/g-communities-logo-hd.png", width: 160, height: 31, alt: "G Communities" },
         address: "",
         website: "gcommunities.eg"
       }
     },
-    // Members of this Entra group get the G Communities signature (Object ID; empty = nobody)
-    communitiesGroupId: "",
-    // Pilot: these mailboxes get the G Communities signature regardless of group
-    communitiesPilotUsers: [],
+    // Entra group Object ID per brand (empty = nobody). Checked in this order; first match wins,
+    // everyone else gets gdev.
+    brandGroups: [
+      { brand: "gcom", groupId: "" },                // G Communities
+      { brand: "gdevSupplyChain", groupId: "bee73de3-361f-4df7-b682-142545c6c35c" }      // signatures.group-SupplyChain@thegdevelopments.com
+    ],
+    // Pilot: mailbox -> brand, regardless of group (never Ahmed's mailbox)
+    brandPilots: {},
     header: "X-GDev-Signature",
     cacheKey: "gdevProfile",
     // Plain-text messages are switched to HTML (full signature) for these mailboxes only
@@ -137,8 +146,8 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
 
   function brandFor(p) {
     var me = String(Office.context.mailbox.userProfile.emailAddress || "").toLowerCase();
-    if (CONFIG.communitiesPilotUsers.indexOf(me) !== -1 || p.brand === "gcom") return CONFIG.brands.gcom;
-    return CONFIG.brands.gdev;
+    var key = CONFIG.brandPilots[me] || p.brand;
+    return CONFIG.brands[key] || CONFIG.brands.gdev;
   }
 
   function logoImg(b) {
@@ -302,16 +311,20 @@ function(e){return e.hasOwnProperty("authorization_endpoint")&&e.hasOwnProperty(
             return response.json();
           })
           .then(function (p) {
-            if (!CONFIG.communitiesGroupId) { p.brand = "gdev"; return p; }
+            var groups = CONFIG.brandGroups.filter(function (g) { return g.groupId; });
+            if (!groups.length) { p.brand = "gdev"; return p; }
             // Group check needs only User.Read; on failure the brand stays unknown (cache decides)
             return fetch("https://graph.microsoft.com/v1.0/me/checkMemberGroups", {
               method: "POST",
               headers: { Authorization: auth.Authorization, "Content-Type": "application/json" },
-              body: JSON.stringify({ groupIds: [CONFIG.communitiesGroupId] })
+              body: JSON.stringify({ groupIds: groups.map(function (g) { return g.groupId; }) })
             })
               .then(function (response) { return response.ok ? response.json() : null; })
               .then(function (result) {
-                if (result) p.brand = (result.value || []).length ? "gcom" : "gdev";
+                if (!result) return p;
+                var member = (result.value || []).map(function (id) { return String(id).toLowerCase(); });
+                var match = groups.filter(function (g) { return member.indexOf(g.groupId.toLowerCase()) !== -1; })[0];
+                p.brand = match ? match.brand : "gdev";
                 return p;
               }, function () { return p; });
           });
